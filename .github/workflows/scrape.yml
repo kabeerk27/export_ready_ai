@@ -1,0 +1,50 @@
+name: DGFT Scraper
+
+on:
+  schedule:
+    # 3:30 AM UTC is 9:00 AM IST
+    - cron: '30 3 * * *'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y tesseract-ocr poppler-utils
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Scraper
+      run: |
+        python scraper.py
+
+    - name: Run Offline Ingester
+      run: |
+        python offline_ingester.py
+
+    - name: Commit and Push new data
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add downloads/ download_history.json export_brain.db offline_ingested.json
+        # Only commit if there are changes
+        git diff --staged --quiet || git commit -m "Auto-update DGFT notifications and DB"
+        git push

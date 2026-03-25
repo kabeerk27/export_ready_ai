@@ -1,0 +1,12 @@
+# Ignore the virtual environment
+.venv/
+
+# Ignore the folder where PDFs are downloaded (to keep the repo light)
+downloads/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore specific PDF files if they are outside the downloads folder
+*.pdf
