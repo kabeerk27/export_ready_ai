@@ -103,14 +103,24 @@ def save_ingestion_log(log: set):
         json.dump(list(log), f, indent=2)
 
 
-def extract_text_pdfplumber(pdf_path: str) -> str:
+def extract_text_pdfplumber(pdf_path: str):
     text_pages = []
-    with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text_pages.append(page_text)
-    return "\n".join(text_pages)
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text_pages.append(page_text)
+        return "\n".join(text_pages)
+    except Exception as e:
+        print(f"    [!] Skipping corrupted file: {pdf_path}")
+        print(f"        Error detail: {e}")
+        try:
+            os.remove(pdf_path)
+            print(f"        Deleted corrupted file: {pdf_path}")
+        except Exception:
+            pass
+        return None
 
 
 def extract_text_ocr(pdf_path: str) -> str:
@@ -308,6 +318,11 @@ def main():
 
         # Step 1: Try text extraction
         text = extract_text_pdfplumber(pdf_path)
+
+        if text is None:
+            ingested.add(filename)
+            skipped_scan += 1  # type: ignore
+            continue
 
         if not text.strip():
             # Try OCR if available
